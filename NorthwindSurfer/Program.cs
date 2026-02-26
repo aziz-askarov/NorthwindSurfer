@@ -2,30 +2,39 @@
 using Microsoft.Data.SqlClient;
 using System.Data;
 
-string connectionString = "Server=localhost;Database=Northwind;Trusted_Connection=True;TrustServerCertificate=True;";
-
+//string connectionString = "Server=localhost;Database=Northwind;Trusted_Connection=True;TrustServerCertificate=True;";
+string connectionString = @"Server=.\SQLEXPRESS;Database=Northwind;Trusted_Connection=True;TrustServerCertificate=True;";
 IDbConnection dbConnection = new SqlConnection(connectionString);
 
-string sqlQuery = "select TOP(1) productid || ' - ' || productname from products order by productid;";
 
-var productNames = await dbConnection.QueryAsync<string>(sqlQuery);
+while (true)
+{
+    while (true)
+    {
+        Console.Write("Mahsulot nomi: ");
+        var input = Console.ReadLine();
 
-//foreach(var productName in productNames)
-//    Console.WriteLine(productName);
+        // Dapper uchun xavfsiz so'rov
+        string sqlQuery = "SELECT ProductName FROM Products WHERE ProductName LIKE @SearchInput";
 
-var name = await dbConnection.QueryFirstOrDefaultAsync<string>(sqlQuery);
-Console.WriteLine(name);
+        try
+        {
+            // Parametrni obyekt sifatida uzatamiz: new { SearchInput = ... }
+            var productNames = await dbConnection.QueryAsync<string>(sqlQuery, new { SearchInput = $"%{input}%" });
 
-Console.Write("Product id: ");
-var productId = int.Parse(Console.ReadLine());
+            foreach (var name in productNames)
+            {
+                Console.WriteLine(name);
+            }
+        }
+        catch (SqlException ex)
+        {
+            Console.WriteLine($"SQL Xatolik: {ex.Message}");
+        }
 
-dynamic product = await dbConnection.QueryFirstOrDefaultAsync(
-    "select * from products where ProductId = @productId",
-    new { productId });
+        Thread.Sleep(5000);
+        Console.Clear();
+    }
 
-
-Console.WriteLine($"{product.ProductId}");
-Console.WriteLine($"{product.ProductName}");
-Console.WriteLine($"{product.CategoryID}");
-Console.WriteLine($"{product.UnitPrice}");
+}
 
